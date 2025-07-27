@@ -203,3 +203,6 @@ __marimo__/
 .streamlit/secrets.toml
 output/logs/*.csv
 output/logs/*.png
+
+# Settings
+settings/local.py
