@@ -60,6 +60,10 @@ FHE_INTERVAL = get_setting("fhe-interval", 5, type_func=int)
 BATTERY_THRESHOLD = get_setting("battery-threshold", 20, type_func=int)
 BATTERY_DEFAULT_VALUE = get_setting("battery-default", 100, type_func=int)
 POLY_MOD_DEGREE = get_setting("poly-mod-degree", 4096, type_func=int)
+try:
+    from settings.local import *
+except ImportError:
+    pass
 
 OUTPUT_FILE = "metrics_log"
 OUTPUT_DIR = f"{BASE_DIR}/output/"
