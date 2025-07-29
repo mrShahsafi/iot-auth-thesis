@@ -24,3 +24,8 @@ python -m app.run \
   --battery-default=100 \
   --poly-mod-degree=4096
   ```
+---
+# Run in different batch_sizes:
+```bash
+(venv) ➜  main git:(dev) ✗ ./run_multiple_nodes_enhanced.sh 
+```
