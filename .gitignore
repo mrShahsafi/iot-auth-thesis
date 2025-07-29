@@ -204,6 +204,8 @@ __marimo__/
 .streamlit/secrets.toml
 output/logs/*.csv
 output/logs/*.png
+output/plots/*.png
+output/*.png
 
 # Settings
 ./settings/local.py
