@@ -27,5 +27,5 @@ python -m app.run \
 ---
 # Run in different batch_sizes:
 ```bash
-(venv) ➜  main git:(dev) ✗ ./run_multiple_nodes_enhanced.sh 
+(venv) ➜  main git:(dev) ✗ ./run_multiple_nodes.sh 
 ```
