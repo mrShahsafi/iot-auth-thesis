@@ -9,7 +9,7 @@ def main():
     """Main execution function."""
     # Initialize application components
     context, energy_consumption, recent_timestamps, lock, trusted_database = init_app()
-    
+
     threads = []
 
     # Start gateway thread
@@ -18,7 +18,7 @@ def main():
     )
     gw_thread.start()
     threads.append(gw_thread)
-    
+
     # Start IoT node threads
     iot_node_mode = {"Hybrid": hybrid_iot_node, "Plain": plain_iot_node}
 

@@ -67,8 +67,13 @@ def iot_node(
             encoded_compressed = compress_data(payload)
             # msg_bytes = payload_str.encode('utf-8')
             msg_bytes = encoded_compressed.encode("utf-8")
+            msg_energy = len(msg_bytes) * ENERGY_PER_BYTE
+            payload["energy"] = msg_energy
+            # Re-compress with energy included
+            encoded_compressed = compress_data(payload)
+            msg_bytes = encoded_compressed.encode("utf-8")
             print(
-                f"[Node {node_id}] Sent BATCH with FHE ({len(batch_plain)} recs) | Energy: {len(msg_bytes)*ENERGY_PER_BYTE:.3f} mJ | Battery: {battery_level}"
+                f"[Node {node_id}] Sent BATCH with FHE ({len(batch_plain)} recs) | Energy: {msg_energy:.3f} mJ | Battery: {battery_level}"
             )
             batch_plain = []
 
@@ -85,8 +90,13 @@ def iot_node(
                 encoded_compressed = compress_data(payload)
                 # msg_bytes = payload_str.encode('utf-8')
                 msg_bytes = encoded_compressed.encode("utf-8")
+                msg_energy = len(msg_bytes) * ENERGY_PER_BYTE
+                payload["energy"] = msg_energy
+                # Re-compress with energy included
+                encoded_compressed = compress_data(payload)
+                msg_bytes = encoded_compressed.encode("utf-8")
                 print(
-                    f"[Node {node_id}] Sent ONLY HMAC (Battery Low) | Energy: {len(msg_bytes)*ENERGY_PER_BYTE:.3f} mJ | Battery: {battery_level}"
+                    f"[Node {node_id}] Sent ONLY HMAC (Battery Low) | Energy: {msg_energy:.3f} mJ | Battery: {battery_level}"
                 )
             else:
                 batch_plain.append(

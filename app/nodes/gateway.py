@@ -44,7 +44,7 @@ def gateway(context, trusted_database, recent_timestamps):
         try:
             with open(LOG_CSV, "a", newline="") as f:
                 f.write(
-                    f"{node_id},{latency_ms:.2f},{len(msg.payload)},{payload.get('battery_level',-1)}\n"
+                    f"{node_id},{latency_ms:.2f},{len(msg.payload)},{payload.get('battery_level',-1)},{payload.get('energy',0):.3f}\n"
                 )
         except Exception as e:
             print(f"[Gateway] Write CSV ERROR: {e}")
