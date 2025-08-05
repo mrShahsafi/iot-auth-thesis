@@ -20,7 +20,8 @@ from ...utils import compress_data
 
 
 def iot_node(
-    node_id, context, lock, energy_consumption, mqtt_broker=None, mqtt_port=None
+    node_id, context, lock, energy_consumption, mqtt_broker=None, mqtt_port=None,
+        trusted_database=None
 ):
     mqtt_broker = mqtt_broker or MQTT_BROKER
     mqtt_port = mqtt_port or MQTT_PORT
@@ -30,10 +31,16 @@ def iot_node(
 
     battery_level = BATTERY_DEFAULT_VALUE
     batch_plain = []
-
+    biometric_vector = trusted_database[node_id]
+    
     for msg_count in range(1, MSGS_PER_NODE + 1):
         time.sleep(random.uniform(0.5, 2))
-        biometric_value = random.randint(1000, 9999)
+
+        if random.random() < 0.8:
+            biometric_value = biometric_vector[(msg_count - 1) % len(biometric_vector)]
+        else:
+            biometric_value = round(random.uniform(0.1, 1.0), 6)  # simulate false biometric
+
         timestamp = round(time.time(), 3)
         message_light = f"{node_id}:{timestamp}:{biometric_value}"
         signature = generate_hmac(message_light)

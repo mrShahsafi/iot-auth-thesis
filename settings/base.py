@@ -60,6 +60,7 @@ FHE_INTERVAL = get_setting("FHE_INTERVAL", 5, type_func=int)
 BATTERY_THRESHOLD = get_setting("BATTERY_THRESHOLD", 20, type_func=int)
 BATTERY_DEFAULT_VALUE = get_setting("BATTERY_DEFAULT_VALUE", 100, type_func=int)
 POLY_MOD_DEGREE = get_setting("POLY_MOD_DEGREE", 4096, type_func=int)
+REPLAY_WINDOW_SEC = get_setting("REPLAY_WINDOW_SEC", 60,)
 try:
     from settings.local import *
 except ImportError:
@@ -67,5 +68,5 @@ except ImportError:
 
 OUTPUT_FILE = "metrics_log"
 OUTPUT_DIR = f"{BASE_DIR}/output/"
-LOG_CSV = f"{OUTPUT_DIR}/logs/{MODE}/{OUTPUT_FILE}_{NUM_NODES}_{MSGS_PER_NODE}_{ENERGY_PER_BYTE}_{FHE_INTERVAL}_{BATTERY_THRESHOLD}.csv"
-REPLAY_WINDOW_SEC = 60
+LOG_CSV = f"{OUTPUT_DIR}/logs/{OUTPUT_FILE}_{MODE}_{NUM_NODES}_{MSGS_PER_NODE}_{ENERGY_PER_BYTE}_{FHE_INTERVAL}_{BATTERY_THRESHOLD}.csv"
+F_P_DIR = f"{BASE_DIR}/settings/fingerprints"

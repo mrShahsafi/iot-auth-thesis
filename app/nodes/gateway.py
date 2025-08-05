@@ -6,6 +6,9 @@ import json
 import base64
 import gzip
 
+from collections import deque
+
+
 from settings import (
     TOPIC,
     REPLAY_WINDOW_SEC,
@@ -21,11 +24,15 @@ from ..core import generate_hmac
 
 def gateway(context, trusted_database, recent_timestamps):
     client = mqtt.Client()
+    received_count = 0
+    expected_count = NUM_NODES * MSGS_PER_NODE
 
     def on_connect(client, userdata, flags, rc):
         client.subscribe(TOPIC)
 
     def on_message(client, userdata, msg):
+        nonlocal received_count
+
         if MODE == "Hybrid":
             compressed_payload = base64.b64decode(msg.payload)
             decompressed_json = gzip.decompress(compressed_payload).decode("utf-8")
@@ -34,13 +41,20 @@ def gateway(context, trusted_database, recent_timestamps):
             payload = json.loads(msg.payload.decode("utf-8"))
         receive_time_ns = time.time_ns()
         node_id = payload["node_id"]
-
+        timestamp = (
+            payload.get("timestamp") or payload.get("batch_timestamps", [None])[0]
+        )
         if "enc_biometrics" in payload:
             base_latency = receive_time_ns - payload["batch_timestamps"][0] * 1e9
             latency_ms = base_latency / 1_000_000
+
         else:
             latency_ms = (receive_time_ns - payload["send_time_ns"]) / 1_000_000
 
+        if not is_fresh(node_id, timestamp):
+            print(f"[Gateway] Replay detected from Node {node_id}")
+            return
+        received_count += 1
         try:
             with open(LOG_CSV, "a", newline="") as f:
                 f.write(
@@ -48,10 +62,6 @@ def gateway(context, trusted_database, recent_timestamps):
                 )
         except Exception as e:
             print(f"[Gateway] Write CSV ERROR: {e}")
-
-        # if not is_fresh(node_id, timestamp):
-        #     print(f"[Gateway] Replay detected from Node {node_id}")
-        #     return
 
         if "enc_biometrics" in payload:
             enc_bytes = base64.b64decode(payload["enc_biometrics"])
@@ -62,15 +72,17 @@ def gateway(context, trusted_database, recent_timestamps):
             print(
                 f"[Gateway] Received BATCH from Node {node_id} | Decryption Time: {dec_time:.4f} sec"
             )
-
+            # print("before for i, val in enumerate(decrypted_values): ")
             for i, val in enumerate(decrypted_values):
                 timestamp = payload["batch_timestamps"][i]
                 hmac_expected = generate_hmac(f"{node_id}:{timestamp}:{val}")
                 valid = hmac.compare_digest(payload["batch_HMAC"][i], hmac_expected)
-                ref_val = trusted_database.get(node_id, None)
-                match_status = (
-                    "MATCH" if ref_val and abs(ref_val - val) < 100 else "NO MATCH"
-                )
+                ref_val = trusted_database.get(node_id, [])
+                if i < len(ref_val) and abs(ref_val[i] - val) < 1:
+                    match_status = "MATCH"
+                else:
+                    match_status = "NO MATCH"
+                # print(f"ref_val:{ref_val},difference:{abs(float(ref_val) - float(val))}")
                 print(f"→ Biometric: {val} | HMAC: {valid} | Match: {match_status}")
 
         elif payload.get("type") == "light":
@@ -78,28 +90,65 @@ def gateway(context, trusted_database, recent_timestamps):
             timestamp = payload["timestamp"]
             hmac_expected = generate_hmac(f"{node_id}:{timestamp}:{biometric}")
             valid = hmac.compare_digest(payload["hmac"], hmac_expected)
-            ref_val = trusted_database.get(node_id, None)
+            ref_val = trusted_database.get(node_id, [])
             match_status = (
-                "MATCH" if ref_val and abs(ref_val - biometric) < 100 else "NO MATCH"
+                "MATCH" if ref_val and abs(ref_val[0] - biometric) < 1 else "NO MATCH"
             )
             print(
                 f"[Gateway] Light AUTH from Node {node_id} | HMAC: {valid} | Match: {match_status}"
             )
 
+        # if received_count >= expected_count:
+        #     print(f"[Gateway] Received all {expected_count} messages. Stopping loop.")
+        #     client.loop_stop()
     def is_fresh(node_id, ts):
+        # Initialize deque for new node_ids
+        # Replay Attack
+        if node_id not in recent_timestamps:
+            recent_timestamps[node_id] = deque()
+
         dq = recent_timestamps[node_id]
         now = time.time()
-        while dq and now - dq[0] > REPLAY_WINDOW_SEC:
-            dq.popleft()
-        if ts in dq:
+
+        # Convert timestamp to float if it's a string
+        try:
+            ts_float = float(ts) if ts is not None else now
+        except (ValueError, TypeError):
+            # If conversion fails, treat as current time
+            ts_float = now
+
+        # Convert REPLAY_WINDOW_SEC to float in case it's a string
+        try:
+            replay_window = float(REPLAY_WINDOW_SEC)
+        except (ValueError, TypeError):
+            replay_window = 60.0  # Default fallback
+
+        # Remove old timestamps outside the replay window
+        # Handle potential conversion errors for existing timestamps
+        while dq:
+            try:
+                oldest_ts = float(dq[0])
+                if now - oldest_ts > replay_window:
+                    dq.popleft()
+                else:
+                    break
+            except (ValueError, TypeError):
+                # Remove invalid timestamp that can't be converted
+                dq.popleft()
+
+        # Check if timestamp already exists (replay attack)
+        if ts_float in dq:
             return False
-        dq.append(ts)
+
+        # Add new timestamp
+        dq.append(ts_float)
         return True
 
     client.on_connect = on_connect
     client.on_message = on_message
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     client.loop_start()
-    time.sleep((MSGS_PER_NODE + 5) * NUM_NODES)
+    # time.sleep((MSGS_PER_NODE + 5) * NUM_NODES)
+    time.sleep(60)
     client.loop_stop()
     client.disconnect()

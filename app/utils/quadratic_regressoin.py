@@ -19,8 +19,8 @@ def estimate_combined_cost(batch_size, alpha=1.0):
     return estimate_latency(batch_size) + alpha * estimate_energy(batch_size)
 
 
-def combined_cost(latency, energy, alpha=1.0):
-    return latency + alpha * energy
+def combined_cost(lat, en, alpha=1.0):
+    return alpha * lat + (1 - alpha) * en
 
 
 """

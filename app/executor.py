@@ -9,9 +9,7 @@ def main():
     """Main execution function."""
     # Initialize application components
     context, energy_consumption, recent_timestamps, lock, trusted_database = init_app()
-
     threads = []
-
     # Start gateway thread
     gw_thread = threading.Thread(
         target=gateway, args=(context, trusted_database, recent_timestamps)
@@ -25,7 +23,7 @@ def main():
     for node_id in range(NUM_NODES):
         t = threading.Thread(
             target=iot_node_mode.get(MODE, None),
-            args=(node_id, context, lock, energy_consumption),
+            args=(node_id, context, lock, energy_consumption,None,None,trusted_database),
         )
         t.start()
         threads.append(t)

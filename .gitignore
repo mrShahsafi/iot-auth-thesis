@@ -209,3 +209,4 @@ output/*.png
 
 # Settings
 ./settings/local.py
+./settings/fingerprints/*
