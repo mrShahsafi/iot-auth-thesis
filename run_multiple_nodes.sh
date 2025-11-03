@@ -13,7 +13,7 @@ echo "Starting multiple simulation runs with different FHE_INTERVAL values..."
 # mkdir -p "$OUTPUT_DIR"
 
 # Loop through FHE_INTERVAL values from 1 to 9
-for fhe_interval in {1..0}
+for fhe_interval in {1..20}
 do
     echo -e "\n========================================"
     echo "Running simulation with FHE_INTERVAL=$fhe_interval"

@@ -201,8 +201,8 @@ def plot_latency_energy_vs_batch_size(
     color1 = "tab:blue"
     ax1.set_xlabel("Batch Size")
     ax1.set_ylabel("Latency (ms)", color=color1)
-    l1 = ax1.plot(batch_sizes, latencies, color=color1, marker='o', label="Latency")
-    ax1.tick_params(axis='y', labelcolor=color1)
+    l1 = ax1.plot(batch_sizes, latencies, color=color1, marker="o", label="Latency")
+    ax1.tick_params(axis="y", labelcolor=color1)
     ax1.axvline(optimal_latency_batch, color=color1, linestyle="--", alpha=0.6)
     ax1.scatter([optimal_latency_batch], [optimal_latency], color=color1, s=80)
 
@@ -210,8 +210,8 @@ def plot_latency_energy_vs_batch_size(
     ax2 = ax1.twinx()
     color2 = "tab:green"
     ax2.set_ylabel("Energy (mJ)", color=color2)
-    l2 = ax2.plot(batch_sizes, energies, color=color2, marker='s', label="Energy")
-    ax2.tick_params(axis='y', labelcolor=color2)
+    l2 = ax2.plot(batch_sizes, energies, color=color2, marker="s", label="Energy")
+    ax2.tick_params(axis="y", labelcolor=color2)
     ax2.axvline(optimal_energy_batch, color=color2, linestyle="--", alpha=0.6)
     ax2.scatter([optimal_energy_batch], [optimal_energy], color=color2, s=80)
 
@@ -220,13 +220,20 @@ def plot_latency_energy_vs_batch_size(
     color3 = "tab:red"
     ax3.spines["right"].set_position(("outward", 60))
     ax3.set_ylabel("Bytes Sent", color=color3)
-    l3 = ax3.plot(batch_sizes, bytes, color=color3, marker='^', label="Bytes")
-    ax3.tick_params(axis='y', labelcolor=color3)
+    l3 = ax3.plot(batch_sizes, bytes, color=color3, marker="^", label="Bytes")
+    ax3.tick_params(axis="y", labelcolor=color3)
     ax3.axvline(optimal_bytes_batch, color=color3, linestyle="--", alpha=0.6)
     ax3.scatter([optimal_bytes_batch], [optimal_bytes], color=color3, s=80)
 
     # Combined cost on ax1 (optional overlay)
-    l4 = ax1.plot(batch_sizes, combined_costs, color="gray", linestyle="--", marker="x", label="Combined Cost")
+    l4 = ax1.plot(
+        batch_sizes,
+        combined_costs,
+        color="gray",
+        linestyle="--",
+        marker="x",
+        label="Combined Cost",
+    )
 
     # ---- Title and Legends ----
     plt.title("Latency, Energy, Bytes, and Combined Cost vs Batch Size")
@@ -236,6 +243,7 @@ def plot_latency_energy_vs_batch_size(
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
 
 def dynamic_node_visualization(node_states, data_flows, steps=100, interval=200):
     """
@@ -247,37 +255,121 @@ def dynamic_node_visualization(node_states, data_flows, steps=100, interval=200)
     fig, ax = plt.subplots()
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
-    ax.set_aspect('equal')
-    
+    ax.set_aspect("equal")
+
     # Assign colors for states
-    state_colors = ['gray', 'green', 'red', 'blue', 'orange']
-    
+    state_colors = ["gray", "green", "red", "blue", "orange"]
+
     # Draw initial nodes
-    scat = ax.scatter([n['pos'][0] for n in node_states],
-                     [n['pos'][1] for n in node_states],
-                     c=[state_colors[n['state'] % len(state_colors)] for n in node_states],
-                     s=200, edgecolors='black')
-    
+    scat = ax.scatter(
+        [n["pos"][0] for n in node_states],
+        [n["pos"][1] for n in node_states],
+        c=[state_colors[n["state"] % len(state_colors)] for n in node_states],
+        s=200,
+        edgecolors="black",
+    )
+
     # Draw initial flows (arrows)
     arrows = []
     for flow in data_flows:
-        from_node = next(n for n in node_states if n['id'] == flow[0])
-        to_node = next(n for n in node_states if n['id'] == flow[1])
-        arr = ax.annotate('', xy=to_node['pos'], xytext=from_node['pos'],
-                          arrowprops=dict(arrowstyle='->', color='cyan' if flow[2] else 'gray', lw=2))
+        from_node = next(n for n in node_states if n["id"] == flow[0])
+        to_node = next(n for n in node_states if n["id"] == flow[1])
+        arr = ax.annotate(
+            "",
+            xy=to_node["pos"],
+            xytext=from_node["pos"],
+            arrowprops=dict(arrowstyle="->", color="cyan" if flow[2] else "gray", lw=2),
+        )
         arrows.append(arr)
 
     def update(frame):
         # Example: randomly change states and flows for demo
         for n in node_states:
-            n['state'] = np.random.randint(0, len(state_colors))
-        scat.set_color([state_colors[n['state'] % len(state_colors)] for n in node_states])
+            n["state"] = np.random.randint(0, len(state_colors))
+        scat.set_color(
+            [state_colors[n["state"] % len(state_colors)] for n in node_states]
+        )
         # Randomly activate/deactivate flows
         for i, flow in enumerate(data_flows):
             active = np.random.rand() > 0.5
             data_flows[i] = (flow[0], flow[1], active)
-            arrows[i].arrow_patch.set_color('cyan' if active else 'gray')
-        return scat,
+            arrows[i].arrow_patch.set_color("cyan" if active else "gray")
+        return (scat,)
 
-    ani = animation.FuncAnimation(fig, update, frames=steps, interval=interval, blit=False)
+    ani = animation.FuncAnimation(
+        fig, update, frames=steps, interval=interval, blit=False
+    )
+    plt.show()
+
+
+def plot_batch_efficiency_summary(
+    path=None,
+):
+    _csv_dir = path or f"{OUTPUT_DIR}/batch_efficiency_summary.csv"
+    # Load your CSV file
+    df = pd.read_csv(_csv_dir)
+    plt.style.use("seaborn-v0_8-whitegrid")
+    fig, axes = plt.subplots(3, 1, figsize=(10, 12))
+
+    # --- Latency plot ---
+    axes[0].errorbar(
+        df["batch_size"],
+        df["avg_latency"],
+        yerr=df["std_latency"],
+        fmt="-o",
+        capsize=4,
+        label="Avg Latency",
+    )
+    axes[0].fill_between(
+        df["batch_size"],
+        df["min_latency"],
+        df["max_latency"],
+        alpha=0.2,
+        label="Latency Range",
+    )
+    axes[0].set_title("Latency vs Batch Size")
+    axes[0].set_xlabel("Batch Size")
+    axes[0].set_ylabel("Latency (ms)")
+    axes[0].legend()
+
+    # --- Energy plot ---
+    axes[1].errorbar(
+        df["batch_size"],
+        df["total_energy"],
+        yerr=df["std_energy"],
+        fmt="-s",
+        capsize=4,
+        color="green",
+        label="Avg Energy",
+    )
+    axes[1].fill_between(
+        df["batch_size"],
+        df["min_energy"],
+        df["max_energy"],
+        alpha=0.2,
+        color="green",
+        label="Energy Range",
+    )
+    axes[1].set_title("Energy Consumption vs Batch Size")
+    axes[1].set_xlabel("Batch Size")
+    axes[1].set_ylabel("Energy (J)")
+    axes[1].legend()
+
+    # --- Battery and Node Count plot ---
+    ax2 = axes[2].twinx()
+    axes[2].plot(
+        df["batch_size"], df["avg_battery"], "-^", label="Avg Battery (%)", color="blue"
+    )
+    ax2.plot(
+        df["batch_size"], df["node_count"], "--o", label="Node Count", color="orange"
+    )
+    axes[2].set_title("Battery and Node Count vs Batch Size")
+    axes[2].set_xlabel("Batch Size")
+    axes[2].set_ylabel("Battery (%)")
+    ax2.set_ylabel("Node Count")
+
+    axes[2].legend(loc="upper left")
+    ax2.legend(loc="upper right")
+
+    plt.tight_layout()
     plt.show()

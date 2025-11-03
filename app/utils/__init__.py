@@ -2,6 +2,7 @@ from .plot import (
     plot_energy_consumption,
     plot_boxplot_latency,
     plot_latency_energy_vs_batch_size,
+    plot_batch_efficiency_summary,
 )
 from .metrics import create_output_csv
 from .compress import compress_data

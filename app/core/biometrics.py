@@ -5,7 +5,8 @@ from skimage.feature import hog
 from skimage import io, color
 import numpy as np
 
-from settings import NUM_NODES,F_P_DIR
+from settings import NUM_NODES, F_P_DIR
+
 
 def load_fingerprint_vectors(dataset_dir=None):
     dataset_dir = dataset_dir or F_P_DIR
@@ -16,13 +17,20 @@ def load_fingerprint_vectors(dataset_dir=None):
         if img.ndim == 3:
             img = color.rgb2gray(img)
         features, _ = hog(
-            img, orientations=9, pixels_per_cell=(8, 8),cells_per_block=(1, 1), visualize=True, feature_vector=True
+            img,
+            orientations=9,
+            pixels_per_cell=(8, 8),
+            cells_per_block=(1, 1),
+            visualize=True,
+            feature_vector=True,
         )
         vectors[i] = features[:12]  # or :81 based on your setup
     return vectors
 
 
-def generate_biometric_vector(biometric_type="fingerprint", nodes_number=None,env="real"):
+def generate_biometric_vector(
+    biometric_type="fingerprint", nodes_number=None, env="real"
+):
     _nodes_number = nodes_number or NUM_NODES
     if biometric_type == "fingerprint":
         if not env == "real":

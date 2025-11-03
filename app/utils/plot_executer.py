@@ -12,8 +12,8 @@ def setup_plot_latency_energy_vs_batch_size_data(
     batch_size_from: int,
     batch_size_to: int,
     nodes_number: int = 10,
-) -> tuple[list[int], list[float], list[float],list[float]]:
-    _directory = f"{OUTPUT_DIR}logs"
+) -> tuple[list[int], list[float], list[float], list[float]]:
+    _directory = f"{OUTPUT_DIR}/logs"
     _batch_sizes = []
     _latencies = []
     _energies = []
@@ -38,12 +38,14 @@ def setup_plot_latency_energy_vs_batch_size_data(
         _latencies.append(float(mean_of_node_sums_latency))
         _bytes.append(float(mean_of_node_sums_bytes))
 
-    return _batch_sizes, _latencies, _energies,_bytes
-
+    return _batch_sizes, _latencies, _energies, _bytes
 
 
 (
-    batch_sizes , latencies , energies,bytes
+    batch_sizes,
+    latencies,
+    energies,
+    bytes,
 ) = setup_plot_latency_energy_vs_batch_size_data(
     batch_size_from=BATCH_SIZE_FROM,
     batch_size_to=BATCH_SIZE_TO,
@@ -51,8 +53,5 @@ def setup_plot_latency_energy_vs_batch_size_data(
 )
 
 plot_latency_energy_vs_batch_size(
-    batch_sizes=batch_sizes,
-    latencies=latencies,
-    energies=energies,
-    bytes=bytes
+    batch_sizes=batch_sizes, latencies=latencies, energies=energies, bytes=bytes
 )

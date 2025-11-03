@@ -22,7 +22,7 @@ from settings import (
 from ..core import generate_hmac
 
 
-def gateway(context, trusted_database, recent_timestamps):
+def gateway(context, trusted_database, recent_timestamps, dry_run=False):
     client = mqtt.Client()
     received_count = 0
     expected_count = NUM_NODES * MSGS_PER_NODE
@@ -55,13 +55,14 @@ def gateway(context, trusted_database, recent_timestamps):
             print(f"[Gateway] Replay detected from Node {node_id}")
             return
         received_count += 1
-        try:
-            with open(LOG_CSV, "a", newline="") as f:
-                f.write(
-                    f"{node_id},{latency_ms:.2f},{len(msg.payload)},{payload.get('battery_level',-1)},{payload.get('energy',0):.3f}\n"
-                )
-        except Exception as e:
-            print(f"[Gateway] Write CSV ERROR: {e}")
+        if not dry_run:
+            try:
+                with open(LOG_CSV, "a", newline="") as f:
+                    f.write(
+                        f"{node_id},{latency_ms:.2f},{len(msg.payload)},{payload.get('battery_level',-1)},{payload.get('energy',0):.3f}\n"
+                    )
+            except Exception as e:
+                print(f"[Gateway] Write CSV ERROR: {e}")
 
         if "enc_biometrics" in payload:
             enc_bytes = base64.b64decode(payload["enc_biometrics"])
@@ -101,6 +102,7 @@ def gateway(context, trusted_database, recent_timestamps):
         # if received_count >= expected_count:
         #     print(f"[Gateway] Received all {expected_count} messages. Stopping loop.")
         #     client.loop_stop()
+
     def is_fresh(node_id, ts):
         # Initialize deque for new node_ids
         # Replay Attack

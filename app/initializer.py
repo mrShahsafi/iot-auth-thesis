@@ -8,7 +8,7 @@ from .utils import create_output_csv
 from .core import tensor_context, init_energy_consumption, generate_biometric_vector
 
 
-def init_app():
+def init_app(dry_run=False):
     """Initialize application components and global variables."""
     # Add root of project to path
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -17,7 +17,8 @@ def init_app():
     energy_consumption = init_energy_consumption()
     recent_timestamps = defaultdict(lambda: deque(maxlen=100))
 
-    create_output_csv()
+    if not dry_run:
+        create_output_csv()
 
     lock = threading.Lock()
     trusted_database = generate_biometric_vector()
