@@ -3,6 +3,11 @@ from .plot import (
     plot_boxplot_latency,
     plot_latency_energy_vs_batch_size,
     plot_batch_efficiency_summary,
+    plot_comprehensive_batch_analysis,
+    setup_plot_latency_energy_vs_batch_size_data,
+    analyze_batch_efficiency,
+    run_batch_analysis,
+    load_batch_data_from_csvs,
 )
 from .metrics import create_output_csv
 from .compress import compress_data
@@ -12,4 +17,3 @@ from .quadratic_regressoin import (
     estimate_energy,
     estimate_combined_cost,
 )
-from .setup import setup_plot_latency_energy_vs_batch_size_data
