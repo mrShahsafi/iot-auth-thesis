@@ -14,5 +14,8 @@ simpy==4.1.1
 six==1.17.0
 tenseal==0.3.16
 zipp==3.21.0
-
 paho-mqtt~=2.1.0
+jupyterlab
+xgboost-2.1.4
+sklearn
+seaborn==0.13.2
