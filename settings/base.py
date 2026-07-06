@@ -74,6 +74,7 @@ OUTPUT_FILE = "metrics_log"
 OUTPUT_DIR = os.path.join(BASE_DIR, "output")
 LOGS_DIR = os.path.join(OUTPUT_DIR, "logs")
 ANALYSIS_DIR = os.path.join(OUTPUT_DIR, "analysis")
+F_P_DIR = os.path.join(BASE_DIR, "settings","fingerprints")
 
 os.makedirs(LOGS_DIR, exist_ok=True)
 
