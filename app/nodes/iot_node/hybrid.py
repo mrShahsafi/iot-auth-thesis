@@ -20,7 +20,13 @@ from ...utils import compress_data
 
 
 def iot_node(
-    node_id, context, lock, energy_consumption, mqtt_broker=None, mqtt_port=None
+    node_id,
+    context,
+    lock,
+    energy_consumption,
+    mqtt_broker=None,
+    mqtt_port=None,
+    trusted_database=None,
 ):
     mqtt_broker = mqtt_broker or MQTT_BROKER
     mqtt_port = mqtt_port or MQTT_PORT
@@ -30,10 +36,18 @@ def iot_node(
 
     battery_level = BATTERY_DEFAULT_VALUE
     batch_plain = []
+    biometric_vector = trusted_database[node_id]
 
     for msg_count in range(1, MSGS_PER_NODE + 1):
         time.sleep(random.uniform(0.5, 2))
-        biometric_value = random.randint(1000, 9999)
+
+        if random.random() < 0.8:
+            biometric_value = biometric_vector[(msg_count - 1) % len(biometric_vector)]
+        else:
+            biometric_value = round(
+                random.uniform(0.1, 1.0), 6
+            )  # simulate false biometric
+
         timestamp = round(time.time(), 3)
         message_light = f"{node_id}:{timestamp}:{biometric_value}"
         signature = generate_hmac(message_light)
@@ -67,8 +81,13 @@ def iot_node(
             encoded_compressed = compress_data(payload)
             # msg_bytes = payload_str.encode('utf-8')
             msg_bytes = encoded_compressed.encode("utf-8")
+            msg_energy = len(msg_bytes) * ENERGY_PER_BYTE
+            payload["energy"] = msg_energy
+            # Re-compress with energy included
+            encoded_compressed = compress_data(payload)
+            msg_bytes = encoded_compressed.encode("utf-8")
             print(
-                f"[Node {node_id}] Sent BATCH with FHE ({len(batch_plain)} recs) | Energy: {len(msg_bytes)*ENERGY_PER_BYTE:.3f} mJ | Battery: {battery_level}"
+                f"[Node {node_id}] Sent BATCH with FHE ({len(batch_plain)} recs) | Energy: {msg_energy:.3f} mJ | Battery: {battery_level}"
             )
             batch_plain = []
 
@@ -85,8 +104,13 @@ def iot_node(
                 encoded_compressed = compress_data(payload)
                 # msg_bytes = payload_str.encode('utf-8')
                 msg_bytes = encoded_compressed.encode("utf-8")
+                msg_energy = len(msg_bytes) * ENERGY_PER_BYTE
+                payload["energy"] = msg_energy
+                # Re-compress with energy included
+                encoded_compressed = compress_data(payload)
+                msg_bytes = encoded_compressed.encode("utf-8")
                 print(
-                    f"[Node {node_id}] Sent ONLY HMAC (Battery Low) | Energy: {len(msg_bytes)*ENERGY_PER_BYTE:.3f} mJ | Battery: {battery_level}"
+                    f"[Node {node_id}] Sent ONLY HMAC (Battery Low) | Energy: {msg_energy:.3f} mJ | Battery: {battery_level}"
                 )
             else:
                 batch_plain.append(

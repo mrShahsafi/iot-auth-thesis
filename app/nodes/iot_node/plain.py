@@ -46,13 +46,15 @@ def iot_node(
         payload["send_time_ns"] = send_time_ns
         payload_str = json.dumps(payload)
         msg_bytes = payload_str.encode("utf-8")
+        msg_energy = len(msg_bytes) * ENERGY_PER_BYTE
+        payload["energy"] = msg_energy
+        payload_str = json.dumps(payload)
+        msg_bytes = payload_str.encode("utf-8")
 
         with lock:
             energy_consumption[node_id] += len(msg_bytes) * ENERGY_PER_BYTE
 
-        print(
-            f"[Node {node_id}] Sent FHE + HMAC | Energy: {len(msg_bytes)*ENERGY_PER_BYTE:.3f} mJ"
-        )
+        print(f"[Node {node_id}] Sent FHE + HMAC | Energy: {msg_energy:.3f} mJ")
         client.publish(TOPIC, payload_str)
 
     client.loop_stop()
