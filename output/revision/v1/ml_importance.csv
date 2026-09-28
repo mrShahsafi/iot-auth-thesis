@@ -1,0 +1,10 @@
+target,feature,permutation_importance,sd
+latency_ms,k,1.9842,0.0406
+latency_ms,bytes,0.0316,0.0007
+latency_ms,battery,0.0293,0.0016
+energy_per_reading,k,2.005,0.0475
+energy_per_reading,bytes,0.0,0.0
+energy_per_reading,battery,0.0,0.0
+cost_index,k,1.9151,0.0478
+cost_index,bytes,0.0375,0.0008
+cost_index,battery,0.0345,0.0019

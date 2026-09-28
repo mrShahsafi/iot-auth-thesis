@@ -1,0 +1,13 @@
+target,model,train,test,MAE,RMSE,R2
+latency_ms,Random Forest,k <= 8 (1350),k > 8 (60),1971.2169,2456.8867,-1.3266
+latency_ms,XGBoost,k <= 8 (1350),k > 8 (60),2074.5179,2579.0522,-1.5637
+latency_ms,MLP,k <= 8 (1350),k > 8 (60),1238.5376,1488.787,0.1457
+latency_ms,Analytic baseline,k <= 8 (1350),k > 8 (60),1197.1865,1476.6324,0.1596
+energy_per_reading,Random Forest,k <= 8 (1350),k > 8 (60),2.3369,2.43,-12.3874
+energy_per_reading,XGBoost,k <= 8 (1350),k > 8 (60),2.3369,2.4299,-12.3864
+energy_per_reading,MLP,k <= 8 (1350),k > 8 (60),0.7634,0.8359,-0.5841
+energy_per_reading,Analytic baseline,k <= 8 (1350),k > 8 (60),0.0,0.0,1.0
+cost_index,Random Forest,k <= 8 (1350),k > 8 (60),0.0566,0.0716,-0.9883
+cost_index,XGBoost,k <= 8 (1350),k > 8 (60),0.0589,0.0742,-1.1348
+cost_index,MLP,k <= 8 (1350),k > 8 (60),0.0524,0.0607,-0.4314
+cost_index,Analytic baseline,k <= 8 (1350),k > 8 (60),0.0385,0.0475,0.1245
