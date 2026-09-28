@@ -1,0 +1,3 @@
+mode,bytes_per_msg,total_energy_J,mean_latency_ms
+"Plain (unbatched, uncompressed)",118427.85,17.76,9.85
+Hybrid k = 1,119535.83,17.93,12.18

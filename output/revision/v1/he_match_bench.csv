@@ -1,0 +1,4 @@
+N,d,max_reading_value_S,score_bound_dS2,plain_modulus,query_ct_bytes,score_ct_bytes,encrypt_ms,armA_decrypt_and_match_ms,armA_sd,armB_homomorphic_match_ms,armB_sd,armB_device_decrypt_ms,armB_extra_downlink_bytes,correct
+4096,12,293,1030188,1032193,88499,88519,1.61,0.62,0.21,8.38,1.38,0.56,88519,True
+4096,64,126,1016064,1032193,88493,88545,1.53,0.56,0.05,7.92,0.12,0.53,88545,True
+4096,128,89,1013888,1032193,88525,88512,1.8,0.8,0.37,10.16,1.38,0.66,88512,True

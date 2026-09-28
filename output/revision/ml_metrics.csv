@@ -1,0 +1,13 @@
+features,target,model,MAE,MAE_sd,RMSE,RMSE_sd,R2,R2_sd
+k+bytes+battery,latency_ms,Random Forest,471.7012,30.7434,752.4772,57.3094,0.9423,0.0089
+k+bytes+battery,latency_ms,XGBoost,447.6087,25.0956,722.8875,33.71,0.947,0.005
+k+bytes+battery,latency_ms,MLP,417.5798,20.6453,659.2017,32.1271,0.9559,0.0047
+k+bytes+battery,latency_ms,Analytic baseline,413.2113,20.7011,655.0485,31.6648,0.9564,0.0046
+k+bytes+battery,energy_per_reading,Random Forest,0.0007,0.0001,0.0018,0.0008,1.0,0.0
+k+bytes+battery,energy_per_reading,XGBoost,0.0009,0.0001,0.0016,0.0003,1.0,0.0
+k+bytes+battery,energy_per_reading,MLP,0.112,0.0094,0.2199,0.0633,1.0,0.0
+k+bytes+battery,energy_per_reading,Analytic baseline,0.0,0.0,0.0,0.0,1.0,0.0
+k+bytes+battery,cost_index,Random Forest,0.0151,0.001,0.0241,0.0018,0.9526,0.0064
+k+bytes+battery,cost_index,XGBoost,0.0141,0.0007,0.0227,0.001,0.9579,0.0031
+k+bytes+battery,cost_index,MLP,0.0231,0.0018,0.0303,0.002,0.9247,0.008
+k+bytes+battery,cost_index,Analytic baseline,0.0133,0.0007,0.0211,0.001,0.9637,0.0029

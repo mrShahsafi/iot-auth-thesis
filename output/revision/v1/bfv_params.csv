@@ -1,0 +1,3 @@
+N,coeff_modulus_bits,coeff_modulus_total_bits,plain_modulus,slots,security_bits_classical,fresh_noise_budget_bits,mult_depth_with_relin,noise_budget_after_last_ok_mult,public_key_bytes,secret_key_bytes,relin_keys_bytes,galois_keys_bytes
+4096,36+36+37,109,1032193,4096,128,45,1,13,134181,70364,276978,6070397
+8192,43+43+44+44+44,218,1032193,8192,128,146,4,16,541988,270969,2167622,52062137

@@ -210,3 +210,8 @@ output/*.png
 # Settings
 ./settings/local.py
 ./settings/fingerprints/*
+# Journal revision: manuscripts, reviewer reports and working notes stay private
+paper/
+sdd/
+AGENTS.md
+ieee_*.html

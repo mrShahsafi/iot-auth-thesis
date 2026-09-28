@@ -1,0 +1,6 @@
+,Latency,Bytes,Energy,Batch size k,Cost index
+Latency,1.0,0.952,0.952,0.978,-0.432
+Bytes,0.952,1.0,1.0,0.973,-0.499
+Energy,0.952,1.0,1.0,0.973,-0.499
+Batch size k,0.978,0.973,0.973,1.0,-0.484
+Cost index,-0.432,-0.499,-0.499,-0.484,1.0

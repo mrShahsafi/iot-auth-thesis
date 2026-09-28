@@ -1,0 +1,10 @@
+features,target,model,MAE,MAE_sd,RMSE,RMSE_sd,R2,R2_sd
+no k,latency_ms,Random Forest,669.8597,34.5614,971.6368,43.6909,0.9042,0.0086
+no k,energy_per_reading,Random Forest,7.9863,0.6588,16.3975,0.9613,0.8538,0.0171
+no k,cost_index,Random Forest,0.0363,0.002,0.0607,0.0028,0.698,0.0288
+no bytes,latency_ms,Random Forest,456.3947,19.7394,734.0687,39.3786,0.9453,0.0058
+no bytes,energy_per_reading,Random Forest,0.0205,0.001,0.0308,0.0015,1.0,0.0
+no bytes,cost_index,Random Forest,0.0147,0.0006,0.0236,0.0013,0.9544,0.0043
+k only,latency_ms,Random Forest,412.806,20.732,656.0012,31.6016,0.9563,0.0046
+k only,energy_per_reading,Random Forest,0.0195,0.0009,0.0297,0.0013,1.0,0.0
+k only,cost_index,Random Forest,0.0133,0.0007,0.0211,0.001,0.9636,0.0029

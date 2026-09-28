@@ -1,13 +1,12 @@
-import time
-import hmac
-import tenseal as ts
-import paho.mqtt.client as mqtt
-import json
 import base64
 import gzip
+import hmac
+import json
+import math
+import time
 
-from collections import deque
-
+import paho.mqtt.client as mqtt
+import tenseal as ts
 
 from settings import (
     TOPIC,
@@ -18,139 +17,111 @@ from settings import (
     NUM_NODES,
     LOG_CSV,
     MODE,
+    FHE_INTERVAL,
+    FEATURE_DIM,
+    MATCH_THRESHOLD,
+    ENERGY_PER_BYTE,
 )
-from ..core import generate_hmac
+from ..core import ACK_TOPIC, DECISION_TOPIC, generate_hmac, hmac_message, signed, verify
+from ..utils.metrics import CSV_FIELDS
 
 
 def gateway(context, trusted_database, recent_timestamps, dry_run=False):
+    """Trusted gateway: freshness check, decrypt the packed batch, verify each reading's HMAC,
+    squared distance to the enrolled template, threshold, then publish the signed decision (message 2) and log the
+    row when the node's signed acknowledgement (message 3) arrives."""
     client = mqtt.Client()
-    received_count = 0
-    expected_count = NUM_NODES * MSGS_PER_NODE
+    received = 0
+    per_node = MSGS_PER_NODE if MODE == "Plain" else math.ceil(MSGS_PER_NODE / FHE_INTERVAL)
+    expected = NUM_NODES * per_node
+    pending = {}  # (node_id, t_capture_first) -> log row waiting for the ack
 
-    def on_connect(client, userdata, flags, rc):
-        client.subscribe(TOPIC)
-
-    def on_message(client, userdata, msg):
-        nonlocal received_count
-
-        if MODE == "Hybrid":
-            compressed_payload = base64.b64decode(msg.payload)
-            decompressed_json = gzip.decompress(compressed_payload).decode("utf-8")
-            payload = json.loads(decompressed_json)
-        else:
-            payload = json.loads(msg.payload.decode("utf-8"))
-        receive_time_ns = time.time_ns()
-        node_id = payload["node_id"]
-        timestamp = (
-            payload.get("timestamp") or payload.get("batch_timestamps", [None])[0]
-        )
-        if "enc_biometrics" in payload:
-            base_latency = receive_time_ns - payload["batch_timestamps"][0] * 1e9
-            latency_ms = base_latency / 1_000_000
-
-        else:
-            latency_ms = (receive_time_ns - payload["send_time_ns"]) / 1_000_000
-
-        if not is_fresh(node_id, timestamp):
-            print(f"[Gateway] Replay detected from Node {node_id}")
+    def log(**row):
+        if dry_run:
             return
-        received_count += 1
-        if not dry_run:
-            try:
-                with open(LOG_CSV, "a", newline="") as f:
-                    f.write(
-                        f"{node_id},{latency_ms:.2f},{len(msg.payload)},{payload.get('battery_level',-1)},{payload.get('energy',0):.3f}\n"
-                    )
-            except Exception as e:
-                print(f"[Gateway] Write CSV ERROR: {e}")
-
-        if "enc_biometrics" in payload:
-            enc_bytes = base64.b64decode(payload["enc_biometrics"])
-            dec_start = time.time()
-            vec = ts.bfv_vector_from(context, enc_bytes)
-            decrypted_values = vec.decrypt()
-            dec_time = time.time() - dec_start
-            print(
-                f"[Gateway] Received BATCH from Node {node_id} | Decryption Time: {dec_time:.4f} sec"
-            )
-            # print("before for i, val in enumerate(decrypted_values): ")
-            for i, val in enumerate(decrypted_values):
-                timestamp = payload["batch_timestamps"][i]
-                hmac_expected = generate_hmac(f"{node_id}:{timestamp}:{val}")
-                valid = hmac.compare_digest(payload["batch_HMAC"][i], hmac_expected)
-                ref_val = trusted_database.get(node_id, [])
-                if i < len(ref_val) and abs(ref_val[i] - val) < 1:
-                    match_status = "MATCH"
-                else:
-                    match_status = "NO MATCH"
-                # print(f"ref_val:{ref_val},difference:{abs(float(ref_val) - float(val))}")
-                print(f"→ Biometric: {val} | HMAC: {valid} | Match: {match_status}")
-
-        elif payload.get("type") == "light":
-            biometric = payload["biometric"]
-            timestamp = payload["timestamp"]
-            hmac_expected = generate_hmac(f"{node_id}:{timestamp}:{biometric}")
-            valid = hmac.compare_digest(payload["hmac"], hmac_expected)
-            ref_val = trusted_database.get(node_id, [])
-            match_status = (
-                "MATCH" if ref_val and abs(ref_val[0] - biometric) < 1 else "NO MATCH"
-            )
-            print(
-                f"[Gateway] Light AUTH from Node {node_id} | HMAC: {valid} | Match: {match_status}"
-            )
-
-        # if received_count >= expected_count:
-        #     print(f"[Gateway] Received all {expected_count} messages. Stopping loop.")
-        #     client.loop_stop()
+        with open(LOG_CSV, "a", newline="") as f:
+            f.write(",".join(f"{row.get(c, 0):.3f}" if isinstance(row.get(c, 0), float) else str(row.get(c, 0)) for c in CSV_FIELDS) + "\n")
 
     def is_fresh(node_id, ts):
-        # Initialize deque for new node_ids
-        # Replay Attack
-        if node_id not in recent_timestamps:
-            recent_timestamps[node_id] = deque()
-
-        dq = recent_timestamps[node_id]
-        now = time.time()
-
-        # Convert timestamp to float if it's a string
-        try:
-            ts_float = float(ts) if ts is not None else now
-        except (ValueError, TypeError):
-            # If conversion fails, treat as current time
-            ts_float = now
-
-        # Convert REPLAY_WINDOW_SEC to float in case it's a string
-        try:
-            replay_window = float(REPLAY_WINDOW_SEC)
-        except (ValueError, TypeError):
-            replay_window = 60.0  # Default fallback
-
-        # Remove old timestamps outside the replay window
-        # Handle potential conversion errors for existing timestamps
-        while dq:
-            try:
-                oldest_ts = float(dq[0])
-                if now - oldest_ts > replay_window:
-                    dq.popleft()
-                else:
-                    break
-            except (ValueError, TypeError):
-                # Remove invalid timestamp that can't be converted
-                dq.popleft()
-
-        # Check if timestamp already exists (replay attack)
-        if ts_float in dq:
+        dq, now, window = recent_timestamps[node_id], time.time(), float(REPLAY_WINDOW_SEC)
+        ts = float(ts)
+        while dq and now - dq[0] > window:
+            dq.popleft()
+        if now - ts > window or ts in dq:
             return False
-
-        # Add new timestamp
-        dq.append(ts_float)
+        dq.append(ts)
         return True
 
-    client.on_connect = on_connect
+    def on_message(client, userdata, msg):
+        nonlocal received
+        t_recv = time.time()
+        raw = gzip.decompress(base64.b64decode(msg.payload)) if MODE == "Hybrid" else msg.payload
+        payload = json.loads(raw.decode("utf-8"))
+        node_id, k, stamps = payload["node_id"], payload["batch_size"], payload["batch_timestamps"]
+        base = dict(node_id=node_id, k=k, bytes=len(msg.payload), battery=payload.get("battery_level", -1),
+                    energy=len(msg.payload) * ENERGY_PER_BYTE)
+        if not all(is_fresh(node_id, t) for t in stamps):
+            print(f"[Gateway] Replay detected from Node {node_id}")
+            log(**base, replay=1)
+            return
+        received += 1
+        if payload.get("type") == "light":
+            log(**base, light=1)
+            print(f"[Gateway] Light ping from Node {node_id} ({k} tags)")
+            return
+        t0 = time.time()
+        values = ts.bfv_vector_from(context, base64.b64decode(payload["enc_biometrics"])).decrypt()
+        t_dec = time.time()
+        template = trusted_database[node_id]["template"]
+        genuine = impostor = gen_acc = imp_acc = hmac_failed = 0
+        decisions = []
+        for i in range(k):
+            vec = values[i * FEATURE_DIM:(i + 1) * FEATURE_DIM]
+            tag_ok = hmac.compare_digest(payload["batch_HMAC"][i], generate_hmac(hmac_message(node_id, stamps[i], vec), node_id))
+            dist = sum((a - b) ** 2 for a, b in zip(vec, template))
+            accepted = tag_ok and dist <= MATCH_THRESHOLD
+            hmac_failed += not tag_ok
+            decisions.append(int(accepted))
+            if payload["labels"][i]:
+                genuine += 1; gen_acc += accepted
+            else:
+                impostor += 1; imp_acc += accepted
+        t_match = time.time()
+        row = dict(**base,
+            latency_ms=(t_recv - payload["t_capture_first"]) * 1e3,
+            wait_ms=(payload["t_capture_last"] - payload["t_capture_first"]) * 1e3,
+            enc_ms=(payload["t_enc_end"] - payload["t_enc_start"]) * 1e3,
+            transport_ms=(t_recv - payload["t_publish"]) * 1e3,
+            dec_ms=(t_dec - t0) * 1e3, match_ms=(t_match - t_dec) * 1e3,
+            genuine=genuine, impostor=impostor, genuine_accepted=gen_acc, impostor_accepted=imp_acc,
+            hmac_failed=hmac_failed)
+        decision = signed(node_id, {"t_capture_first": payload["t_capture_first"], "decisions": decisions})
+        row["decision_bytes"] = len(decision)
+        pending[(node_id, payload["t_capture_first"])] = row
+        client.publish(DECISION_TOPIC.format(node_id), decision, qos=1)
+        print(f"[Gateway] Node {node_id} batch k={k}: genuine {gen_acc}/{genuine} accepted, "
+              f"impostor {imp_acc}/{impostor} accepted, HMAC failures {hmac_failed}, decrypt {(t_dec - t0) * 1e3:.1f} ms")
+
+    def on_ack(client, userdata, msg):
+        ok, node_id, body = verify(msg.payload)
+        row = pending.pop((node_id, body["t_capture_first"]), None) if ok else None
+        if row is None:
+            return
+        row.update(decision_ms=(body["t_decision_recv"] - body["t_capture_first"]) * 1e3, ack_bytes=len(msg.payload))
+        row["energy"] += len(msg.payload) * ENERGY_PER_BYTE  # node transmit energy: request + ack
+        log(**row)
+
+    client.on_connect = lambda c, u, f, rc: c.subscribe([(TOPIC, 0), (ACK_TOPIC, 1)])
     client.on_message = on_message
+    client.message_callback_add(ACK_TOPIC, on_ack)
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     client.loop_start()
-    # time.sleep((MSGS_PER_NODE + 5) * NUM_NODES)
-    time.sleep(60)
+    start = time.time()
+    while (received < expected or pending) and time.time() - start < 180:
+        time.sleep(0.5)
+    time.sleep(3)  # stragglers and replayed copies
+    for row in pending.values():  # decided but never acknowledged
+        log(**row, decision_ms=-1.0)
     client.loop_stop()
     client.disconnect()
+    print(f"[Gateway] {received}/{expected} messages received")

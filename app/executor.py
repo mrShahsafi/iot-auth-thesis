@@ -1,7 +1,6 @@
 import threading
 from settings import MODE, NUM_NODES
 from .nodes import gateway, plain_iot_node, hybrid_iot_node
-from .utils import plot_energy_consumption, plot_boxplot_latency
 from .initializer import init_app
 
 
@@ -48,7 +47,4 @@ def main(dry_run=False):
     print("\nTotal Energy Consumption (mJ):")
     for node, energy in energy_consumption.items():
         print(f"Node {node}: {energy:.2f} mJ")
-    if not dry_run:
-        print("Running the plots...")
-        plot_energy_consumption(nodes, energy_values)
-        plot_boxplot_latency()
+    print(f"Total: {sum(energy_values):.1f} mJ over {len(nodes)} nodes")
